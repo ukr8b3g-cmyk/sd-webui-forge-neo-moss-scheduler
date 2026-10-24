@@ -1,0 +1,10 @@
+[project]
+name = "sd-webui-forge-neo-moss-scheduler"
+version = "0.9.0"
+description = "Forge Neo port of ComfyUI MOSS Shift Scheduler with three request-local scheduling modes."
+requires-python = ">=3.10"
+license = { file = "LICENSE" }
+
+[project.urls]
+Repository = "https://github.com/ukr8b3g-cmyk/sd-webui-forge-neo-moss-scheduler"
+Issues = "https://github.com/ukr8b3g-cmyk/sd-webui-forge-neo-moss-scheduler/issues"

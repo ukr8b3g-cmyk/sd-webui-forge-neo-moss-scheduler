@@ -1,0 +1,48 @@
+.forge-moss-scheduler {
+    align-items: center !important;
+    flex-wrap: nowrap !important;
+    gap: 6px !important;
+    padding: 4px 8px !important;
+    border: 1px solid var(--block-border-color) !important;
+    border-radius: 8px;
+    min-height: 36px;
+}
+.forge-moss-scheduler > div { margin: 0 !important; }
+.forge-moss-scheduler > div:has(input[type="checkbox"]) {
+    flex: 0 0 auto !important;
+    width: max-content !important;
+    min-width: max-content !important;
+}
+.forge-moss-scheduler .forge-moss-modes label {
+    padding: 4px 10px !important;
+    margin: 0 !important;
+    border-radius: 6px !important;
+    cursor: pointer;
+}
+.forge-moss-scheduler .forge-moss-modes {
+    flex: 0 0 auto !important;
+    width: max-content !important;
+    min-width: max-content !important;
+}
+.forge-moss-scheduler .forge-moss-modes .wrap {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    gap: 4px !important;
+}
+.forge-moss-scheduler .forge-moss-modes label {
+    white-space: nowrap !important;
+}
+.forge-moss-scheduler .forge-moss-modes label:has(input:checked) {
+    background: var(--button-primary-background-fill) !important;
+    color: var(--button-primary-text-color) !important;
+    border-color: var(--button-primary-border-color) !important;
+}
+.forge-moss-scheduler .forge-moss-modes input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+    width: 1px;
+}
+.forge-moss-scheduler .forge-moss-modes label:focus-within {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 1px;
+}
