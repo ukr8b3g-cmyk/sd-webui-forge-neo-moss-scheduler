@@ -42,6 +42,14 @@ This is a personal observation, not a controlled quality or speed benchmark.
 Normal SFT generation without the acceleration LoRA has had very limited practical testing.
 The LoRA author recommends strength 0.7; that upstream recommendation is separate from this project's 0.8 starting point.
 
+### ComfyUI reference settings
+
+![Source ComfyUI KSampler: 8 steps, CFG 5, dpmpp_sde, MOSS Shift Scheduler, denoise 1.0](docs/images/comfyui-moss-shift-settings.png)
+
+This supplied screenshot is from **ComfyUI**, the source of this port: **8 steps, CFG 5, `dpmpp_sde`, MOSS Shift Scheduler and denoise 1.0**.
+In Forge Neo, use **DPM++ SDE** with **MOSS Scheduler ON + Shift** in the extension's control row.
+Model shift and LoRA strength are not shown in the screenshot; refer to the recommendations above.
+
 ### Sampler names: two different SDE choices
 
 | Forge Neo Sampling Method | ComfyUI sampler_name | Status |
@@ -191,6 +199,14 @@ This is an unofficial extension and is not endorsed by OpenMOSS or Forge.
 速度や画質の比較ベンチマークではなく、同じ結果を保証するものではありません。
 高速化LoRAなしの通常SFT生成は、実使用でほとんどテストしていません。
 LoRA配布元の推奨強度0.7とは区別し、この拡張の開始例は0.8としています。
+
+### 移植元ComfyUIの設定例
+
+![移植元ComfyUIのKSampler：8 steps、CFG 5、dpmpp_sde、MOSS Shift Scheduler、denoise 1.0](docs/images/comfyui-moss-shift-settings.png)
+
+提供画像は移植元の **ComfyUI** の設定例です。**8 steps・CFG 5・`dpmpp_sde`・MOSS Shift Scheduler・denoise 1.0** が表示されています。
+Forge Neoでは **DPM++ SDE** を選び、拡張の操作欄で **MOSS SchedulerをON＋Shift選択** にしてください。
+モデルShiftとLoRA強度は画像には表示されていないため、上の推奨表を参照してください。
 
 ### サンプラー名の対応
 
