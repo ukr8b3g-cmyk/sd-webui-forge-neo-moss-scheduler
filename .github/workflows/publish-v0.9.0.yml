@@ -1,0 +1,78 @@
+name: Publish v0.9.0
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/publish-v0.9.0.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: publish-v0.9.0
+  cancel-in-progress: false
+
+jobs:
+  release:
+    if: github.repository == 'ukr8b3g-cmyk/sd-webui-forge-neo-moss-scheduler'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Publish the verified v0.9.0 source commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          import urllib.error
+          import urllib.request
+          
+          repo = os.environ["GITHUB_REPOSITORY"]
+          assert repo == "ukr8b3g-cmyk/sd-webui-forge-neo-moss-scheduler"
+          tag = "v0.9.0"
+          target = "f868ceaa878374583d922c6b6c1ae838a8030a2b"
+          headers = {
+              "Authorization": "Bearer " + os.environ["GH_TOKEN"],
+              "Accept": "application/vnd.github+json",
+              "X-GitHub-Api-Version": "2022-11-28",
+              "Content-Type": "application/json",
+          }
+          def api(path, payload=None):
+              data = None if payload is None else json.dumps(payload).encode()
+              req = urllib.request.Request("https://api.github.com/repos/" + repo + path,
+                                           data=data, headers=headers)
+              with urllib.request.urlopen(req, timeout=60) as response:
+                  return json.load(response)
+          
+          try:
+              release = api("/releases/tags/" + tag)
+          except urllib.error.HTTPError as error:
+              if error.code != 404:
+                  raise
+              release = None
+          
+          if release is None:
+              release = api("/releases", {
+                  "tag_name": tag,
+                  "target_commitish": target,
+                  "name": "Forge Neo MOSS Scheduler v0.9.0",
+                  "body": "[日本語](#日本語)\n\nInitial Forge Neo port of [ComfyUI-MOSS-Shift-Scheduler](https://github.com/ukr8b3g-cmyk/ComfyUI-MOSS-Shift-Scheduler).\n\n- Three modes: **Shift / Curve / Sigma**. Initial UI state: **OFF, Shift selected**.\n- Japanese hover help for Japanese WebUI locales; English otherwise.\n- Recommended starting range: **8–10 steps, CFG 3–5, model shift 5, lora_latest strength 0.8**.\n- Personal starting point: **8 steps / CFG 5** with **DPM++ SDE or DPM++ 2M SDE**. These are adjustable recommendations.\n\n> [!IMPORTANT]\n> **Turn MOSS Scheduler ON to activate it. While ON, the normal Schedule Type is overridden**, even if Simple, Align Your Steps, etc. remains displayed.\n> Turn it **OFF** to use the normal Schedule Type. No new entries are added to that dropdown.\n\nInstall the extension under `extensions/sd-webui-forge-neo-moss-scheduler`, restart the application normally, and reload the browser.\nExisting installations can update from the repository. See the [bilingual README](https://github.com/ukr8b3g-cmyk/sd-webui-forge-neo-moss-scheduler/blob/v0.9.0/README.md) for installation and usage.\n\nValidation: 11 CPU tests passed on each Forge Neo / Forge Neo2 installation (same Forge commit `0c388f8`), including numerical compatibility with the ComfyUI source and actual Gradio component construction.\nLive GPU generation and post-installation browser behavior have not been checked. Practical image testing has mainly used MOSS-Image SFT with the DMD acceleration LoRA; ordinary SFT without it has had limited testing.\n\n## 日本語\n\n[ComfyUI-MOSS-Shift-Scheduler](https://github.com/ukr8b3g-cmyk/ComfyUI-MOSS-Shift-Scheduler) をForge Neoへ移植した初回公開版です。\n\n- **Shift / Curve / Sigma** の3方式。初期状態は **OFF・Shift選択**です。\n- WebUIの日本語ロケールでは日本語、それ以外では英語のマウスオーバーヘルプを表示します。\n- 推奨開始値：**8〜10 steps、CFG 3〜5、モデルShift 5、lora_latest強度0.8**。\n- 個人的な開始例：**8 steps／CFG 5**、**DPM++ SDE または DPM++ 2M SDE**。固定条件ではなく、好みに合わせて調整してください。\n\n> [!IMPORTANT]\n> **MOSS SchedulerをONにしないと有効になりません。ON中は通常のSchedule Typeを上書きします。**\n> SimpleやAlign Your Stepsなどが表示されていても、その選択は使用されません。\n> 通常のスケジューラーを使う場合は **OFF** にしてください。Schedule Typeの選択肢には追加されません。\n\n`extensions/sd-webui-forge-neo-moss-scheduler` に導入し、通常の方法で本体を再起動してブラウザーを再読み込みしてください。\n詳しい使い方は [日本語README](https://github.com/ukr8b3g-cmyk/sd-webui-forge-neo-moss-scheduler/blob/v0.9.0/README.md#日本語) を参照してください。\n\nForge Neo／Forge Neo2の各環境でCPUテスト11件を確認しました。導入後の実画面とGPU生成は未確認です。\n主な使用例はMOSS-Image SFT＋DMD高速化LoRAで、LoRAなしの通常SFT生成はほぼ未検証です。\n",
+                  "draft": False,
+                  "prerelease": False,
+                  "make_latest": "true",
+              })
+          
+          ref = api("/git/ref/tags/" + tag)
+          obj = ref["object"]
+          if obj["type"] == "tag":
+              obj = api("/git/tags/" + obj["sha"])["object"]
+          assert obj["type"] == "commit" and obj["sha"] == target, "Release tag target mismatch"
+          assert release["tag_name"] == tag and not release["draft"] and not release["prerelease"]
+          print(release["html_url"])
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as output:
+              output.write("Published " + release["html_url"] + "\nTarget: " + target + "\n")
+          PY
