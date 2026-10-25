@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased — 2026-10-25
+
+- Removed the sampler-name allowlist. Sigma-based samplers exposing Forge's `get_sigmas` interface can use all three MOSS modes.
+- DPM++ SDE and DPM++ 2M SDE remain recommendations, not mandatory choices.
+- Retained an explicit interface error for timestep-only methods such as DDIM/PLMS; OFF restores their normal behavior.
+- Added CPU checks with 19 installed solver entries across 342 mode/step/pass combinations per installation, using real Forge sampling methods and solver code with a stand-in denoiser.
+
 ## 0.9.0 — 2026-10-24
 
 - Initial public Forge Neo port of ComfyUI-MOSS-Shift-Scheduler v0.9.

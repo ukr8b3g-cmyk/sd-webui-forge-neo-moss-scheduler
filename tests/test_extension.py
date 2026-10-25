@@ -106,7 +106,7 @@ class Tests(unittest.TestCase):
                 if kind == "model":
                     self.moss_mock.return_value = False
                 if kind == "sampler":
-                    self.p.sampler.funcname = "sample_ddim"
+                    self.p.sampler.get_sigmas = None
                 if kind == "override":
                     self.p.sampler_noise_scheduler_override = lambda n: None
                 runtime.capture(self.p, "True" if kind == "enabled" else True,
@@ -117,6 +117,29 @@ class Tests(unittest.TestCase):
                 self.assertNotIn(runtime.PATCH, vars(self.p.sampler))
                 self.assertNotIn("sample", vars(self.p.sampler))
                 self.moss_mock.return_value = True
+
+    def test_sampler_names_and_callable_functions_are_not_restricted(self):
+        for name in ("sample_dpmpp_2m", "sample_euler_ancestral", "sample_heun", "sample_lms",
+                     "sample_dpm_2", "sample_res_multistep", "sample_lcm",
+                     "sample_dpmpp_2m_cfg_pp", "future_custom_sampler", lambda *a: None, None):
+            with self.subTest(name=name):
+                self.setUp_request()
+                self.p.sampler.funcname = name
+                for mode in core.MODES:
+                    self.enable(mode)
+                    result = self.p.sampler.sample(self.p)
+                    self.assertTrue(torch.equal(result, core.MODE_HANDLERS[mode](self.p.sampler.model_wrap, 25)))
+
+    def test_missing_sigma_interface_errors_clearly_and_off_delegates(self):
+        self.p.sampler.get_sigmas = None
+        self.p.sampler.sample = lambda p: "timestep sampler"
+        self.enable()
+        with self.assertRaisesRegex(ValueError, "no sigma-schedule interface"):
+            self.p.sampler.sample(self.p)
+        self.assertEqual(self.p.sampler.sample(self.p), "timestep sampler")
+        runtime.capture(self.p, False, core.MODES[0])
+        runtime.install(self.p)
+        self.assertEqual(self.p.sampler.sample(self.p), "timestep sampler")
 
     def setUp_request(self):
         self.p.sampler = FakeSampler(self.table)

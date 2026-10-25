@@ -6,7 +6,6 @@ import torch
 from . import VERSION
 from .core import MODE_HANDLERS
 
-SUPPORTED = {"sample_dpmpp_sde", "sample_dpmpp_2m_sde", "sample_er_sde", "sample_euler"}
 KEY = "MOSS Scheduler"
 MODE_KEY = "MOSS Scheduler Mode"
 STATE = "_forge_moss_scheduler_request"
@@ -69,8 +68,8 @@ def install(p):
             raise ValueError("MOSS Scheduler: invalid enabled value or mode")
         if not is_moss(p):
             raise ValueError("MOSS Scheduler: MOSS-Image models only; turn OFF for other models")
-        if getattr(sampler, "funcname", None) not in SUPPORTED or not callable(getattr(sampler, "get_sigmas", None)):
-            raise ValueError("MOSS Scheduler: use DPM++ SDE, DPM++ 2M SDE, ER SDE or Euler")
+        if not callable(getattr(sampler, "get_sigmas", None)):
+            raise ValueError("MOSS Scheduler: this sampler has no sigma-schedule interface (get_sigmas); use a sigma-based sampler or turn MOSS Scheduler OFF")
         if getattr(p, "sampler_noise_scheduler_override", None) is not None:
             raise ValueError("MOSS Scheduler: another sigma override is active; disable one override")
 
