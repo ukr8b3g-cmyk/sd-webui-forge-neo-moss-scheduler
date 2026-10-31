@@ -160,6 +160,8 @@ This is an unofficial extension and is not endorsed by OpenMOSS or Forge.
 ---
 
 <a id="日本語"></a>
+<img width="287" height="470" alt="image" src="https://github.com/user-attachments/assets/f748070e-f064-4250-8de7-e0a87e849abd" />
+
 ## 日本語
 
 ### 概要・最初に確認すること
