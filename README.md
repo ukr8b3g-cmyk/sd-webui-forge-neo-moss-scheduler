@@ -1,312 +1,112 @@
-# Forge Neo MOSS Scheduler 0.9.0
-<img width="287" height="470" alt="image" src="https://github.com/user-attachments/assets/a079632e-fcd5-40bc-8bbd-34605c0f4b9b" />
+# Forge Neo MOSS Scheduler 0.9.1
 
+[日本語](#日本語) · [Implementation / validation](docs/LOCAL_IMPLEMENTATION_RESULT_JA.md)
 
-[日本語はこちら](#日本語)
+Unofficial Forge port of [ComfyUI-MOSS-Shift-Scheduler](https://github.com/ukr8b3g-cmyk/ComfyUI-MOSS-Shift-Scheduler).
+Repository: [sd-webui-forge-neo-moss-scheduler](https://github.com/ukr8b3g-cmyk/sd-webui-forge-neo-moss-scheduler).
+Version 0.9.1 adds the three existing calculations to Schedule Type while preserving the lower controls. [Release notes](docs/RELEASE_NOTES_0.9.1.md).
 
-An unofficial Forge Neo port of [ComfyUI-MOSS-Shift-Scheduler](https://github.com/ukr8b3g-cmyk/ComfyUI-MOSS-Shift-Scheduler) v0.9.
-It brings the same three sigma-schedule calculations to a compact control row in txt2img and img2img.
-The main practical use case is **MOSS-Image SFT with `lora_latest.safetensors` DMD acceleration LoRA**.
+## Selection
 
-> [!IMPORTANT]
-> **Turn MOSS Scheduler ON to use it. Selecting Shift alone does not activate it.**
-> **While ON, this extension overrides the normal Schedule Type for that generation.**
-> Simple, Align Your Steps, Karras, etc. may still appear selected, but that selection is not used.
-> **Turn MOSS Scheduler OFF when you want to use the normal Schedule Type.**
-> This extension does not add entries to the Schedule Type list or disable the visible dropdown.
+Select **MOSS Shift Scheduler**, **MOSS Curve Scheduler**, or **MOSS Sigma Scheduler** in Schedule Type. This works with the lower checkbox OFF.
+The existing lower checkbox and Shift / Curve / Sigma controls remain available.
 
-![MOSS Scheduler enabled with Shift selected](docs/images/moss-scheduler-controls.png)
+<img width="287" height="470" alt="Schedule Type — user-provided screenshot" src="https://github.com/user-attachments/assets/a079632e-fcd5-40bc-8bbd-34605c0f4b9b" />
 
-The screenshot shows **ON + Shift**. Initial state on a fresh UI is **OFF with Shift selected**.
-Use the checkbox and the buttons in this lower control row, not the normal Schedule Type dropdown.
+Select the full MOSS scheduler name here; the lower checkbox can stay OFF.
 
-## Recommended starting settings
+| Schedule Type | Lower control | Effective schedule |
+|---|---|---|
+| MOSS mode | Either state | The MOSS mode selected in the list |
+| Normal mode, e.g. Beta | ON | The lower MOSS mode |
+| Normal mode | OFF | Native Forge schedule |
 
-The recommendations follow the ComfyUI port source, with the owner's current preferred range.
-They are adjustable starting points, not universal optima.
+The main and Hires passes resolve separately. **Use same scheduler** inherits the main selection; **Automatic** is independent.
+For MOSS main and normal Hires, turn the lower override OFF, select MOSS in the main list and Beta (or another normal mode) in Hires. With the lower override ON, a normal Hires selection is also overridden.
+No automatic changes are made to seed, steps, CFG, model shift, LoRA or saved UI selection.
 
-| Setting | Recommendation |
+![Existing lower controls](docs/images/moss-scheduler-controls.png)
+
+Fresh lower controls remain OFF + Shift. Hover help follows the WebUI locale: Japanese for Japanese, English otherwise.
+
+## Recommended starting point
+
+These are adjustable owner recommendations for MOSS-Image SFT plus acceleration LoRA, not benchmarked universal optima.
+
+| Setting | Starting point |
 |---|---|
 | Model | [MOSS-Image SFT](https://huggingface.co/OpenMOSS-Team/MOSS-Image-SFT) |
-| Acceleration LoRA | [`lora_latest.safetensors`](https://huggingface.co/lodestones/MOSS-Image-SFT-8-steps-dmd/blob/main/lora_latest.safetensors) from [lodestones/MOSS-Image-SFT-8-steps-dmd](https://huggingface.co/lodestones/MOSS-Image-SFT-8-steps-dmd) |
-| LoRA strength | **0.8** as a starting point; adjust to taste |
-| Sampling Method | **DPM++ SDE** or **DPM++ 2M SDE** |
-| Sampling Steps | **8–10** |
-| CFG Scale | **3 as the recommended starting point; adjust to taste** |
-| Model Shift | **5** |
-| MOSS Scheduler | **ON** |
-| Mode | **Shift** first |
-| Schedule Type | Leave the current selection; it is overridden while MOSS Scheduler is ON |
+| LoRA | [lora_latest.safetensors DMD](https://huggingface.co/lodestones/MOSS-Image-SFT-8-steps-dmd/blob/main/lora_latest.safetensors), strength 0.8 |
+| Sampler | DPM++ SDE / DPM++ 2M SDE |
+| Steps | 8–10, start at 8 |
+| CFG | 3 |
+| Model shift | 5 |
+| Schedule Type | MOSS Shift Scheduler |
+| Lower MOSS override | OFF when selecting directly from the list |
 
-**Personal starting point: 8 steps, CFG 3, model shift 5, and LoRA strength 0.8.**
-The owner reports that 8 steps is faster than 10 and can give slightly more detail in their use case.
-This is a personal observation, not a controlled quality or speed benchmark.
-Normal SFT generation without the acceleration LoRA has had very limited practical testing.
-The LoRA author recommends strength 0.7; that upstream recommendation is separate from this project's 0.8 starting point.
+LoRA strength 0.8 differs from its author's 0.7 recommendation. Normal SFT without acceleration LoRA has had limited practical testing.
+The sampler names above are recommendations only. Other compatible sigma-based samplers remain supported. DDIM/PLMS have no compatible sigma interface: choose a normal schedule and turn the lower override OFF.
 
-### Sampler names: two different SDE choices
+| Mode | Existing equation |
+|---|---|
+| MOSS Shift Scheduler | Radiance compatible, power 2.4, midpoint_shift 0.98, steps+1 grid with penultimate removal |
+| MOSS Curve Scheduler | Power Shift defaults, power 2.0, midpoint_shift 1.0 |
+| MOSS Sigma Scheduler | power 2.4, midpoint_shift 0.98, offset 0.75 |
 
-| Forge Neo Sampling Method | ComfyUI sampler_name | Status |
-|---|---|---|
-| **DPM++ SDE** | `dpmpp_sde` | Recommended candidate |
-| **DPM++ 2M SDE** | `dpmpp_2m_sde` | Recommended candidate |
-| DPM++ 2M (without SDE) | `dpmpp_2m` | A different sampler; supported through the sigma interface |
+The core equations, duplicate timestep handling and sigma lengths are unchanged. Each MOSS sampling call calculates once, bypassing native extra-step / penultimate adjustments without changing global settings.
 
-The two recommended choices follow the [source project's example](https://github.com/ukr8b3g-cmyk/ComfyUI-MOSS-Shift-Scheduler#日本語)
-and the [original sampler comparison report](https://www.reddit.com/r/StableDiffusion/comments/1x86z9k/moss_image_samplers_and_schedulers/),
-where prompt adherence was reported as good. Their Forge/ComfyUI labels differ in formatting.
-DPM++ SDE and DPM++ 2M SDE are distinct algorithms; neither should be confused with plain DPM++ 2M.
-These are recommendations only: there is no sampler-name allowlist.
-Samplers using Forge's `get_sigmas` interface can use the selected MOSS schedule, including DPM++ 2M,
-Euler a, Euler, Heun, LMS, DPM2, LCM, Res Multistep, Kohaku LoNyu Yog, ER SDE, Restart, UniPC and CFG++ variants.
-DDIM and PLMS use timesteps rather than this sigma interface; turn MOSS Scheduler OFF for those methods.
+## Metadata and compatibility
 
-## How to use
+Schedule type / Hires schedule type record the actual MOSS choice. MOSS Scheduler / MOSS Scheduler Mode preserve the lower controls, so list-selected MOSS with lower OFF restores OFF. Old images using the lower override still work.
+MOSS Schedule intervals records the full schedule; MOSS Sampling intervals records the used suffix, with equivalent MOSS Hires fields. An image without lower-control fields restores the lower override OFF while retaining its standard schedule choice.
 
-1. Install/update the extension, restart Forge Neo normally, then reload the browser.
-2. Select a **MOSS-Image** model and load the intended LoRA.
-3. Set **Sampling Method** to DPM++ SDE or DPM++ 2M SDE; enter steps, CFG, LoRA strength and model shift manually.
-4. In the lower row shown above, enable **MOSS Scheduler** and select **Shift**, **Curve**, or **Sigma**.
-5. Leave the normal **Schedule Type** selection as it is, then generate.
-6. To compare against Simple, Align Your Steps or another ordinary schedule, **turn MOSS Scheduler OFF** first.
+MOSS-Image models only. Another sigma override, invalid schedule, incompatible sampler or conflicting registration produces an explicit error. There is no silent fallback. Non-MOSS schedules with lower OFF retain native behavior.
 
-Once the row is present, changing ON/OFF or mode applies to the **next generation** without a restart.
-Controls do not change your sampler, steps, CFG, LoRA, model shift, eta or stored Schedule Type.
-Start comparisons with Hires. fix OFF; if enabled, the selected MOSS mode applies to the normal and HiRes passes,
-using Forge's own denoise and pass settings.
+## Install / update
 
-| Control state | Effective schedule | Normal Schedule Type |
-|---|---|---|
-| OFF | The normal Forge schedule | Used as displayed |
-| ON + Shift | MOSS Shift Scheduler | Overridden |
-| ON + Curve | MOSS Curve Scheduler | Overridden |
-| ON + Sigma | MOSS Sigma Scheduler | Overridden |
+Inside Forge's extensions directory:
 
-### What the three buttons mean
-
-| Button | Source mode | Calculation difference |
-|---|---|---|
-| **Shift** — initially selected | MOSS Shift Scheduler | Radiance-compatible: power 2.4, midpoint_shift 0.98; steps+1 candidates and penultimate-sigma removal |
-| **Curve** | MOSS Curve Scheduler | Original Power Shift defaults: power 2.0, midpoint_shift 1.0 |
-| **Sigma** | MOSS Sigma Scheduler | power 2.4, midpoint_shift 0.98; timestep placement `j / (steps + 0.75)` |
-
-See the source project's comparison tables for numerical examples.
-There is no established image-quality ranking between these choices.
-Hover over the checkbox or a button for help: Japanese when the **WebUI locale** is Japanese, English otherwise
-(including None/unset), independently of the OS/browser language.
-
-### Confirm the override was applied
-
-After a successful generation, inspect the parameters/PNG Info:
-
-```text
-MOSS Scheduler: True
-MOSS Scheduler Mode: MOSS Shift Scheduler
-MOSS Scheduler Version: 0.9.0
-```
-
-Curve and Sigma store their corresponding full mode names.
-The extension also records MOSS Schedule steps / MOSS Schedule intervals, with MOSS Hires-prefixed fields for HiRes.
-These fields are written when the MOSS sigma calculation actually runs.
-The ordinary Schedule type field may still show its saved value; use the **MOSS Scheduler fields** to identify the override.
-
-PNG Info / Send to can restore the enabled state and mode.
-Loading an image without MOSS fields switches this extension OFF; an unknown saved mode is also switched OFF with a notice.
-
-## Installation
-
-From the Forge Neo installation directory:
-
-```bash
-cd extensions
+```sh
 git clone https://github.com/ukr8b3g-cmyk/sd-webui-forge-neo-moss-scheduler.git
 ```
 
-Restart Forge Neo and reload the browser. No extra pip installation is required.
-Install one copy only. Remove/disable an earlier copy before installing a second copy.
-To uninstall, stop Forge and move only this extension folder outside extensions, then restart.
-
-## Scope, compatibility and verification
-
-- The Forge adapter intentionally accepts **MOSS-Image models only**. Other models should be used with this extension OFF.
-- The Core calculations are an unmodified port of the source project's `scheduler.py`.
-  Matching model sigma tables and effective step counts give matching schedule values.
-- Forge/ComfyUI can differ in denoise slicing, eta, text processing and intermediate noise.
-  Matching seed/settings does not guarantee identical images.
-- Normal Schedule Type, global sigma min/max/rho and Forge's extra penultimate removal do not reshape this override.
-- Samplers without the `get_sigmas` interface, another active sigma override, invalid tables, or an empty denoise interval raise an error instead of silently using a different schedule.
-- Restart can rebuild its own schedule or insert restart steps; CFG++ and other solvers also retain their own internal behavior.
-- Checked against Forge Neo commit `0c388f8b26d26d475c2c7104aea4eafdf7bbb3e7`; a minimum older version is not established.
-- CPU adapter tests cover 81 canonical mode/shift/step comparisons, restoration on failure/interruption, OFF delegation,
-  conflicts, PNG normalization, denoise/HiRes slicing, and real Gradio component construction.
-- CPU compatibility checks run all 19 installed sigma-based solver entries through Forge's actual txt2img/img2img methods:
-  three MOSS modes, 8/10 steps and normal/img2img/HiRes passes (342 cases per installation).
-  A small stand-in denoiser replaces model inference; solver code is real. This is not a GPU/image-quality test.
-- Isolated Gradio 4.40.0 browser checks covered six layout conditions and eight locale conditions, preserving selection.
-  The supplied screenshot shows the actual control row; no independent GPU quality/speed benchmark was performed here.
-
-For CPU tests, use the existing Forge Python environment. From this repository, set `FORGE_NEO_ROOT` to the Forge installation root
-and run `python -B tests/test_extension.py`. The canonical comparison reference is bundled as `tests/reference/comfy_scheduler.py`;
-`MOSS_COMFY_SOURCE` can optionally point to another source `scheduler.py`.
-Run `python -B tests/test_sampler_compatibility.py` with the same `FORGE_NEO_ROOT` for the installed-solver CPU checks.
-
-## License and source
-
-MIT. See [LICENSE](LICENSE) and [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
-Port source: [ComfyUI-MOSS-Shift-Scheduler v0.9](https://github.com/ukr8b3g-cmyk/ComfyUI-MOSS-Shift-Scheduler),
-based on Silver's MIT Power Shift / Radiance Shift implementation.
-This is an unofficial extension and is not endorsed by OpenMOSS or Forge.
-
----
-
-<a id="日本語"></a>
-<img width="287" height="470" alt="image" src="https://github.com/user-attachments/assets/f748070e-f064-4250-8de7-e0a87e849abd" />
+Update existing installations through the usual extension updater. After Python code updates, fully restart Forge and reload the browser. UI Reload alone does not load updated Python modules. Install one copy only. No new dependencies or model downloads are required.
 
 ## 日本語
 
-### 概要・最初に確認すること
+**v0.9.1**では、Schedule Typeに **MOSS Shift Scheduler／MOSS Curve Scheduler／MOSS Sigma Scheduler** を追加しました。従来の下段操作も使えます。[リリースノート](docs/RELEASE_NOTES_0.9.1.md)。
 
-**Forge Neo MOSS Scheduler 0.9.0** は、[ComfyUI-MOSS-Shift-Scheduler](https://github.com/ukr8b3g-cmyk/ComfyUI-MOSS-Shift-Scheduler) v0.9をForge Neoへ移植した非公式拡張です。
-主な使用対象は **MOSS-Image SFT＋`lora_latest.safetensors`のDMD高速化LoRA** です。
+<img width="287" height="470" alt="Schedule Typeの選択例 — ユーザー提供画像" src="https://github.com/user-attachments/assets/f748070e-f064-4250-8de7-e0a87e849abd" />
 
-> [!IMPORTANT]
-> **使うには、下部のMOSS Schedulerを必ずONにしてください。Shiftが選択されているだけでは有効になりません。**
-> **ON中は、その生成で通常のSchedule Typeを使わず、下部で選んだShift／Curve／Sigmaを優先します。**
-> Simple、Align Your Steps、Karrasなどが欄に表示されていても、ON中はその選択が使われません。
-> **通常のスケジューラーを使いたい場合は、MOSS SchedulerをOFFにしてください。**
-> この拡張はSchedule Type一覧に項目を追加したり、見た目のドロップダウンを無効化したりする方式ではありません。
+この一覧でMOSSを選ぶ場合、下段をONにする必要はありません。
 
-![MOSS SchedulerをONにしてShiftを選択した状態](docs/images/moss-scheduler-controls.png)
+**一覧MOSS ＞ 下段ON ＞ 標準処理**の順で、通常生成とHiresそれぞれの方式を決定します。一覧でMOSSを選べば、下段チェックがOFFでも動作します。下段OFFは下段からの上書きだけを無効化します。
 
-画像は **ON＋Shift** の状態です。初回の状態は **OFF／Shift選択** です。
-操作するのは、この下部のチェック欄とボタンです。通常のSchedule Type一覧で新しい名前を探す必要はありません。
-
-### 推奨の開始値
-
-移植元のComfyUI版を基にした推奨範囲です。個人の使用例であり、必須値や全環境での最適値ではありません。
-
-| 項目 | 推奨 |
-|---|---|
-| モデル | [MOSS-Image SFT](https://huggingface.co/OpenMOSS-Team/MOSS-Image-SFT) |
-| 高速化LoRA | [lodestones/MOSS-Image-SFT-8-steps-dmd](https://huggingface.co/lodestones/MOSS-Image-SFT-8-steps-dmd) の [`lora_latest.safetensors`](https://huggingface.co/lodestones/MOSS-Image-SFT-8-steps-dmd/blob/main/lora_latest.safetensors) |
-| LoRA強度 | **0.8**を開始値に調整 |
-| Sampling Method | **DPM++ SDE** または **DPM++ 2M SDE** |
-| Sampling Steps | **8〜10** |
-| CFG Scale | **3を推奨開始値に。出力に合わせて調整可能** |
-| モデルのShift | **5** |
-| MOSS Scheduler | **ON** |
-| 方式 | まず **Shift** |
-| Schedule Type | 現在の値のまま。ON中はこちらの選択を使わない |
-
-**個人の開始例は、8 steps・CFG 3・モデルShift 5・LoRA強度0.8です。**
-作者の実使用では「10ステップより8ステップの方が速く、細部もややよかった」との所感があります。
-速度や画質の比較ベンチマークではなく、同じ結果を保証するものではありません。
-高速化LoRAなしの通常SFT生成は、実使用でほとんどテストしていません。
-LoRA配布元の推奨強度0.7とは区別し、この拡張の開始例は0.8としています。
-
-### サンプラー名の対応
-
-| Forge NeoのSampling Method | ComfyUIのsampler_name | 扱い |
+| Schedule Type | 下段 | 実効方式 |
 |---|---|---|
-| **DPM++ SDE** | `dpmpp_sde` | 推奨候補 |
-| **DPM++ 2M SDE** | `dpmpp_2m_sde` | 推奨候補 |
-| DPM++ 2M（SDEなし） | `dpmpp_2m` | 別方式。SIGMASの受け取り口を通して利用可能 |
+| 一覧のMOSS方式 | ON／OFF | 一覧のMOSS方式 |
+| Beta等の通常方式 | ON | 下段のMOSS方式 |
+| 通常方式 | OFF | 標準Forge処理 |
 
-この2つは[移植元の使用例](https://github.com/ukr8b3g-cmyk/ComfyUI-MOSS-Shift-Scheduler#日本語)と、
-プロンプト追従性が評価された[元の比較投稿](https://www.reddit.com/r/StableDiffusion/comments/1x86z9k/moss_image_samplers_and_schedulers/)に準拠しています。
-ForgeとComfyUIでは表記が違いますが、上の表の対応です。**DPM++ SDEとDPM++ 2M SDEは別のアルゴリズム**です。
-SDEのないDPM++ 2Mとも区別してください。上記2候補は推奨であり、サンプラー名の許可リストはありません。
-Forgeの`get_sigmas`を使うサンプラーで選択したMOSS方式を利用できます。DPM++ 2M、Euler a、Euler、Heun、LMS、
-DPM2、LCM、Res Multistep、Kohaku LoNyu Yog、ER SDE、Restart、UniPC、CFG++系も対象です。
-DDIM／PLMSはタイムステップ方式で、このSIGMASの受け取り口がありません。これらを使う場合はMOSS SchedulerをOFFにしてください。
+HiresだけBeta等を使う場合は、下段をOFFにし、通常一覧でMOSS、Hires一覧でBeta等を選んでください。下段ONのままでは通常のHires選択も上書きします。Use same schedulerは通常側の選択を継承し、Automaticは別の自動選択です。
 
-### 操作手順
+推奨開始値は **MOSS-Image SFT＋lora_latest DMD LoRA 0.8、8 steps、CFG 3、モデルshift 5、DPM++ SDEまたはDPM++ 2M SDE、一覧でMOSS Shift Scheduler、下段OFF**です。各値は調整できます。LoRAなしの通常SFTは実使用確認が少なく、画質優劣は未評価です。
 
-1. 導入・更新後はForge Neoを通常の方法で再起動し、ブラウザーを再読み込みします。
-2. MOSS-ImageモデルとLoRAを選びます。
-3. Sampling MethodをDPM++ SDEまたはDPM++ 2M SDEにし、Steps・CFG・LoRA強度・モデルShiftを手動で設定します。
-4. 画像の下部UIでMOSS SchedulerをONにし、Shift／Curve／Sigmaを選びます。
-5. 通常のSchedule TypeはそのままでGenerateを実行します。
-6. 通常のSimpleやAlign Your Stepsなどと比較するときは、**MOSS SchedulerをOFF**にします。
+1. 更新後、Forge本体を完全再起動し、ブラウザーを再読み込みします。
+2. モデル・LoRA・サンプラー・Steps・CFG・モデルShiftを設定します。
+3. Schedule TypeでMOSSの3方式から選びます。最初はMOSS Shift Scheduler・下段OFFで比較できます。
+4. 従来操作を使う場合は一覧を通常方式にして下段をONにし、Shift／Curve／Sigmaを選びます。
+5. Beta等へ戻す場合は一覧もその通常方式に変更し、下段をOFFにします。下段OFFだけでは一覧MOSSは無効になりません。
 
-UI表示後のON/OFFや方式の切替は、次に開始する生成へ適用されます。
-サンプラー、steps、CFG、LoRA、モデルshift、eta、Schedule Typeの保存値は自動変更しません。
-まずはHires. fixをOFFにして比較してください。HiResを使うときは通常・HiRes両方へ選択方式を適用し、
-denoiseなどはForge側の各パスの設定を使います。
+![従来の下段操作](docs/images/moss-scheduler-controls.png)
 
-| 操作 | 実際に使う配分 | 通常のSchedule Type |
-|---|---|---|
-| OFF | Forge標準で選んだもの | 表示どおり使う |
-| ON＋Shift | MOSS Shift Scheduler | 上書きされ、この選択は使わない |
-| ON＋Curve | MOSS Curve Scheduler | 上書きされ、この選択は使わない |
-| ON＋Sigma | MOSS Sigma Scheduler | 上書きされ、この選択は使わない |
+PNG InfoのSchedule type／Hires schedule typeには実際の方式、MOSS Scheduler／Modeには下段の入力状態を保存します。旧形式も復元できます。API infotextの文字列Falseは実bool Falseへ変換し、生成後の下段が勝手にONになることを防ぎます。
 
-### 3つのボタンとヘルプ
+MOSS-Image専用です。DPM++の2種類は推奨で、サンプラー名による制限ではありません。DDIM／PLMSでは通常方式＋下段OFFにします。登録衝突・別sigma override・対応外モデル等は明示エラーです。
 
-| ボタン | ComfyUI版での方式 | 計算上の違い |
-|---|---|---|
-| **Shift**（初期選択） | MOSS Shift Scheduler | 元のRadiance互換。power 2.4、midpoint_shift 0.98。steps+1候補とゼロ直前の点の削除 |
-| **Curve** | MOSS Curve Scheduler | 元のPower Shift既定曲線。power 2.0、midpoint_shift 1.0 |
-| **Sigma** | MOSS Sigma Scheduler | power 2.4、midpoint_shift 0.98。時刻を `j / (steps + 0.75)` に配置 |
+**利用前にForge本体を完全再起動し、ブラウザーを再読み込みしてください。** GPU確認はユーザー側で実施する前提です。CPU試験やGradio部品構築は、稼働画面・実APIサーバー・GPU生成の成功を証明しません。
 
-数値例は移植元READMEの比較表を参照してください。方式ごとの画質順位は確定していません。
-チェック欄とボタンにマウスを乗せると説明が表示されます。
-**WebUIロケールが日本語なら日本語、それ以外（None／未設定を含む）は英語**です。OSやブラウザーの言語には連動しません。
+## License / 来歴
 
-### 実際に適用されたか確認する
-
-生成後のパラメーター／PNG Infoで、次の項目を確認します。
-
-```text
-MOSS Scheduler: True
-MOSS Scheduler Mode: MOSS Shift Scheduler
-MOSS Scheduler Version: 0.9.0
-```
-
-Curve／SigmaではModeが対応するフルネームになります。
-MOSS Schedule steps／MOSS Schedule intervals、HiResではMOSS Hiresで始まる段数情報も記録します。
-これらは実際にMOSSのsigma計算が走ったときに付く情報です。
-通常のSchedule type欄には元の保存値が残ることがあります。**適用確認はMOSS Schedulerの項目で行ってください。**
-
-PNG Info／Send toで有効状態と方式を転送できます。
-MOSS情報のない画像を読み込むとOFFに戻り、未知の保存モードも通知してOFFにします。
-
-### 導入・取り外し
-
-Forge Neoフォルダーでターミナルを開いて実行します。
-
-```bash
-cd extensions
-git clone https://github.com/ukr8b3g-cmyk/sd-webui-forge-neo-moss-scheduler.git
-```
-
-Forge Neoを再起動し、ブラウザーを再読み込みます。追加pipインストールは不要です。
-導入は1コピーだけにしてください。旧コピーがある場合は無効化してから導入します。
-取り外すときはForge停止後、この拡張フォルダーだけをextensions外へ退避し、再起動します。
-
-### 対応範囲・検証
-
-- Forge側のアダプターは **MOSS-Image専用**です。他モデルではOFFにしてください。
-- 計算処理はComfyUI版のscheduler.pyを改変せず移植しています。同じモデルsigmaテーブル・実効stepsなら値が一致します。
-- denoiseの切り出し、eta、テキスト処理、途中ノイズなどはForgeとComfyUIで異なり得ます。同じseedでも同一画像は保証しません。
-- ON中は通常のSchedule Type、汎用sigma min/max/rho、Forgeの追加penultimate削除で配分を再加工しません。
-- `get_sigmas`の受け取り口がない方式、他のsigma overrideとの競合、不正なテーブル、denoise後の区間不足はエラーで停止します。
-- Restart自身による配分の再作成・再始動ステップの追加や、CFG++など各サンプラー固有の内部処理は維持します。
-- Forge Neoの確認対象はコミット `0c388f8b26d26d475c2c7104aea4eafdf7bbb3e7`です。最低対応の旧版は確定していません。
-- CPUテストで81条件の正本比較、OFF時の委譲、例外・中断後の復元、競合、PNG値、denoise／HiRes切り出し、Gradio部品構築を確認しています。
-- インストール済みのSIGMAS方式19種類を、Forge本体のtxt2img／img2img処理を通してCPU確認しています。
-  3モード×8／10 steps×通常／img2img／HiResの342条件を各環境で確認。モデル推論は小さな代用処理ですが、サンプラーの計算コードは実物です。GPU生成・画質評価ではありません。
-- 隔離Gradio 4.40.0のブラウザー確認では、配置6条件とロケール8条件で選択維持まで確認しています。
-  提供画像で実画面のUI表示も確認できていますが、こちらで独立したGPU画質・速度ベンチマークは行っていません。
-
-CPUテストは既存のForge Python環境で実行します。このリポジトリを作業ディレクトリにして、
-`FORGE_NEO_ROOT`にForgeのルートを指定し、`python -B tests/test_extension.py`を実行してください。
-比較用の正本は`tests/reference/comfy_scheduler.py`に同梱し、任意で`MOSS_COMFY_SOURCE`に別のscheduler.pyを指定できます。
-実サンプラーのCPU確認は、同じ`FORGE_NEO_ROOT`を指定して`python -B tests/test_sampler_compatibility.py`を実行します。
-
-### ライセンス・移植元
-
-MIT。[LICENSE](LICENSE)と[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)を参照してください。
-移植元は[ComfyUI-MOSS-Shift-Scheduler v0.9](https://github.com/ukr8b3g-cmyk/ComfyUI-MOSS-Shift-Scheduler)です。
-Silver氏のMIT版Power Shift／Radiance Shiftの計算と著作権表示を継承しています。
-OpenMOSSおよびForge公式の製品ではありません。
+MIT. See [LICENSE](LICENSE) and [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+The adapted scheduler retains the original Silver copyright and ComfyUI port attribution. No PPM or other new runtime dependency is added.

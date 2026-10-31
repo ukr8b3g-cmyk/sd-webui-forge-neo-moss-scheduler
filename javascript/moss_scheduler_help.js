@@ -3,13 +3,13 @@
     "use strict";
     const help = {
         ja: [
-            "ONにすると、選んだ方式を通常のSchedule Typeより優先して使います。一覧に項目は増えません。OFFなら通常のSchedule Typeを使います。MOSS-Imageモデル用です。",
+            "Schedule TypeのMOSS選択が最優先です。通常方式＋ONでは下段方式で上書きします。OFFは下段の上書きだけを無効化します。Hiresだけ通常方式にするには下段OFF＋通常側の一覧でMOSSを選びます。MOSS-Image専用です。",
             "MOSS Shift Scheduler：基準の方式です。元のRadiance Shiftと同じ計算を使います。まずはこの方式から比較してください。",
             "MOSS Curve Scheduler：元のPower Shiftの既定曲線です。Shiftとはノイズ量を下げる配分が異なります。仕上がりの違いを比較できます。",
             "MOSS Sigma Scheduler：Shiftに近い曲線で、各ステップの位置を少しずらした方式です。Shiftとの仕上がりの違いを比較できます。",
         ],
         en: [
-            "ON uses the selected MOSS mode instead of Schedule Type; it does not add list entries. OFF uses the normal Schedule Type. For MOSS-Image models only.",
+            "A MOSS Schedule Type takes priority. With a normal schedule, ON uses the lower MOSS mode; OFF disables only that override. For normal Hires with MOSS main, turn the lower override OFF and select MOSS in the main list. MOSS-Image only.",
             "MOSS Shift Scheduler: the baseline, using the original Radiance Shift calculation. Start here when comparing modes.",
             "MOSS Curve Scheduler: the original Power Shift default curve. It distributes denoising steps differently from Shift; compare the resulting images.",
             "MOSS Sigma Scheduler: a curve close to Shift with slightly offset step placement. Compare its output with Shift.",

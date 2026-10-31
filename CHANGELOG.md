@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.9.1 — 2026-10-31
+
+- Register MOSS Shift / Curve / Sigma Scheduler in native schedule lists. Explicit list selection wins over the existing lower override, independently for main and Hires.
+- Preserve existing core equations and request-local sigma calculation, without native extra-step / penultimate processing being applied twice.
+- Add owned registry lifecycle, reserved-name protection, typed infotext restoration and per-batch execution metadata cleanup.
+- Retain lower UI layout and arguments. Update bilingual instructions and preserve the owner's two README screenshots; no new dependency.
+- CPU validation and deployment details: docs/LOCAL_IMPLEMENTATION_RESULT_JA.md. Live host/API/browser and GPU validation are separate; GPU testing belongs to the user.
+
 ## Unreleased — 2026-10-25
 
 - Removed the sampler-name allowlist. Sigma-based samplers exposing Forge's `get_sigmas` interface can use all three MOSS modes.

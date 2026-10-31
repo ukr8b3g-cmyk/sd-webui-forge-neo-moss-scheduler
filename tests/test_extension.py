@@ -70,7 +70,7 @@ class Tests(unittest.TestCase):
         for shift in (1., 3., 5.):
             x = torch.arange(1, 1001) / 1000
             model = types.SimpleNamespace(sigmas=shift * x / (1 + (shift - 1) * x))
-            for steps in (1, 2, 3, 8, 20, 25, 50, 100, 1000):
+            for steps in (1, 2, 3, 8, 10, 20, 25, 50, 100, 1000):
                 for mode in core.MODES:
                     with self.subTest(shift=shift, steps=steps, mode=mode):
                         self.assertTrue(torch.equal(core.MODE_HANDLERS[mode](model, steps),
@@ -194,8 +194,14 @@ class Tests(unittest.TestCase):
         module = types.ModuleType("modules")
         module.scripts = types.SimpleNamespace(Script=type("Base", (), {"elem_id": lambda s, x: str(id(s))+x}), AlwaysVisible=object())
         callbacks = []
-        module.script_callbacks = types.SimpleNamespace(on_infotext_pasted=callbacks.append)
-        with patch.dict(sys.modules, {"modules": module}):
+        module.script_callbacks = types.SimpleNamespace(on_infotext_pasted=callbacks.append, on_before_ui=lambda f: None, on_script_unloaded=lambda f: None)
+        fields = types.ModuleType('modules.infotext_utils')
+        tree = ast.parse((FORGE / 'modules/infotext_utils.py').read_text(encoding='utf-8-sig'))
+        cls = next(n for n in tree.body if isinstance(n, ast.ClassDef) and n.name == 'PasteField')
+        env = {'gr': gr}
+        exec(compile(ast.Module(body=[cls], type_ignores=[]), 'native_PasteField', 'exec'), env)
+        fields.PasteField = env['PasteField']
+        with patch.dict(sys.modules, {"modules": module, 'modules.infotext_utils': fields}), patch('forge_moss_scheduler.registry.register'):
             spec = importlib.util.spec_from_file_location("test_ui_entry", ROOT / "scripts/forge_moss_scheduler.py")
             entry = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(entry)
@@ -208,6 +214,9 @@ class Tests(unittest.TestCase):
                 self.assertEqual(mode.value, core.MODES[0])
                 self.assertEqual([v for _, v in mode.choices], list(core.MODES))
             self.assertEqual(instances[0].paste_field_names, instances[1].paste_field_names)
+            field = instances[0].infotext_fields[0]
+            self.assertEqual(field[1], runtime.KEY)
+            self.assertIs(field.function({runtime.KEY: 'False'}), False)
             self.assertEqual(len([c for c in block.config["components"] if c["type"] == "row"]), 2)
 
     def test_actual_forge_get_sigmas_discard_and_off(self):
@@ -225,8 +234,9 @@ class Tests(unittest.TestCase):
         self.p.sampler = actual_class(self.table)
         self.p.sampler.config = types.SimpleNamespace(options={})
         self.p.scheduler = self.p.hr_scheduler = "Simple"
-        for discard in (False, True):
+        for discard, sampler_discard in ((False, False), (True, False), (False, True), (True, True)):
             opts.always_discard_next_to_last_sigma = discard
+            self.p.sampler.config.options['discard_next_to_last_sigma'] = sampler_discard
             baseline = self.p.sampler.sample(self.p)
             for mode in core.MODES:
                 self.enable(mode)
